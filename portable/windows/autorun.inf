@@ -1,0 +1,11 @@
+[AutoRun]
+label=CrossCrypt Secure Drive
+icon=crosscrypt.exe
+open=crosscrypt.exe
+action=Open CrossCrypt Secure Drive
+shell\open\command=crosscrypt.exe
+shell\open=Open CrossCrypt
+shell\encrypt\command=crosscrypt.exe create -d %1
+shell\encrypt=Encrypt Drive
+shell\mount\command=crosscrypt.exe mount -d %1
+shell\mount=Mount Drive

@@ -1,0 +1,99 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., v0.1.0)'
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-all:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            name: macos-x86_64
+          - os: macos-14
+            target: aarch64-apple-darwin
+            name: macos-arm64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: linux-x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: windows-x86_64
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+    
+    - name: Install dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libfuse3-dev pkg-config
+    
+    - name: Build
+      run: cargo build --release --target ${{ matrix.target }}
+    
+    - name: Package (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        mkdir -p dist
+        cp target/${{ matrix.target }}/release/crosscrypt dist/crosscrypt-${{ matrix.name }}
+        cp README.md dist/
+        cp -r docs dist/
+        cp -r portable dist/ 2>/dev/null || true
+        cd dist && tar czf ../crosscrypt-${{ matrix.name }}.tar.gz *
+    
+    - name: Package (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        New-Item -ItemType Directory -Force -Path dist
+        Copy-Item target/${{ matrix.target }}/release/crosscrypt.exe dist/crosscrypt-${{ matrix.name }}.exe
+        Copy-Item README.md dist/
+        Copy-Item -Recurse docs dist/
+        Copy-Item -Recurse portable/windows dist/ 2>$null
+        Compress-Archive -Path dist\* -DestinationPath crosscrypt-${{ matrix.name }}.zip
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: crosscrypt-${{ matrix.name }}
+        path: |
+          crosscrypt-${{ matrix.name }}.*
+
+  create-release:
+    needs: build-all
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.version }}
+        name: Release ${{ github.event.inputs.version }}
+        files: |
+          crosscrypt-macos-x86_64/*.tar.gz
+          crosscrypt-macos-arm64/*.tar.gz
+          crosscrypt-linux-x86_64/*.tar.gz
+          crosscrypt-windows-x86_64/*.zip
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=CrossCrypt
+Comment=Cross-platform portable disk encryption
+Exec=crosscrypt
+Icon=crosscrypt
+Terminal=true
+Type=Application
+Categories=System;Security;
+Keywords=encryption;disk;security;privacy;

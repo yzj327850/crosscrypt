@@ -1,0 +1,193 @@
+name: Build CrossCrypt
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # macOS build
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Cache cargo
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Build
+      run: cargo build --release
+    
+    - name: Run tests
+      run: cargo test --release
+    
+    - name: Package
+      run: |
+        mkdir -p dist
+        cp target/release/crosscrypt dist/crosscrypt-macos-x86_64
+        cp README.md dist/
+        cp -r docs dist/
+        cd dist && tar czf ../crosscrypt-macos-x86_64.tar.gz *
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: crosscrypt-macos-x86_64
+        path: crosscrypt-macos-x86_64.tar.gz
+
+  # macOS ARM build
+  build-macos-arm:
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-apple-darwin
+    
+    - name: Cache cargo
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-arm-cargo-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Build
+      run: cargo build --release --target aarch64-apple-darwin
+    
+    - name: Package
+      run: |
+        mkdir -p dist
+        cp target/aarch64-apple-darwin/release/crosscrypt dist/crosscrypt-macos-arm64
+        cp README.md dist/
+        cp -r docs dist/
+        cd dist && tar czf ../crosscrypt-macos-arm64.tar.gz *
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: crosscrypt-macos-arm64
+        path: crosscrypt-macos-arm64.tar.gz
+
+  # Linux build
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libfuse3-dev pkg-config
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Cache cargo
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Build
+      run: cargo build --release
+    
+    - name: Run tests
+      run: cargo test --release
+    
+    - name: Package
+      run: |
+        mkdir -p dist
+        cp target/release/crosscrypt dist/crosscrypt-linux-x86_64
+        cp README.md dist/
+        cp -r docs dist/
+        cd dist && tar czf ../crosscrypt-linux-x86_64.tar.gz *
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: crosscrypt-linux-x86_64
+        path: crosscrypt-linux-x86_64.tar.gz
+
+  # Windows build
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: x86_64-pc-windows-msvc
+    
+    - name: Cache cargo
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Build
+      run: cargo build --release --target x86_64-pc-windows-msvc
+    
+    - name: Run tests
+      run: cargo test --release --target x86_64-pc-windows-msvc
+    
+    - name: Package
+      run: |
+        New-Item -ItemType Directory -Force -Path dist
+        Copy-Item target/x86_64-pc-windows-msvc/release/crosscrypt.exe dist/crosscrypt-windows-x86_64.exe
+        Copy-Item README.md dist/
+        Copy-Item -Recurse docs dist/
+        Copy-Item portable/windows/autorun.inf dist/
+        Compress-Archive -Path dist\* -DestinationPath crosscrypt-windows-x86_64.zip
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: crosscrypt-windows-x86_64
+        path: crosscrypt-windows-x86_64.zip
+
+  # Create release
+  release:
+    needs: [build-macos, build-macos-arm, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          crosscrypt-macos-x86_64/*.tar.gz
+          crosscrypt-macos-arm64/*.tar.gz
+          crosscrypt-linux-x86_64/*.tar.gz
+          crosscrypt-windows-x86_64/*.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
