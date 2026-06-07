@@ -50,7 +50,7 @@ jobs:
         sudo apt-get install -y libfuse3-dev pkg-config
     
     - name: Build
-      run: cargo build --release --target ${{ matrix.target }}
+      run: cargo build --release --target ${{ matrix.target }} --features gui
     
     - name: Package (Unix)
       if: matrix.os != 'windows-latest'
@@ -68,6 +68,9 @@ jobs:
         New-Item -ItemType Directory -Force -Path dist
         Copy-Item target/${{ matrix.target }}/release/crosscrypt.exe dist/crosscrypt-${{ matrix.name }}.exe
         Copy-Item README.md dist/
+        Copy-Item crosscrypt-gui.bat dist/
+        Copy-Item crosscrypt-gui.ps1 dist/
+        Copy-Item 使用说明.txt dist/
         Copy-Item -Recurse docs dist/
         Copy-Item -Recurse portable/windows dist/ 2>$null
         Compress-Archive -Path dist\* -DestinationPath crosscrypt-${{ matrix.name }}.zip
