@@ -61,6 +61,14 @@ crosscrypt.exe unmount -d E:
 crosscrypt.exe lock -d E:
 ```
 
+## Download Pre-built Binaries
+
+GitHub Actions automatically builds releases for all platforms:
+- **Windows**: Download `crosscrypt-windows-x86_64.zip` from [Releases](https://github.com/yzj327850/crosscrypt/releases)
+- **macOS (Intel)**: Download `crosscrypt-macos-x86_64.tar.gz`
+- **macOS (Apple Silicon)**: Download `crosscrypt-macos-arm64.tar.gz`
+- **Linux**: Download `crosscrypt-linux-x86_64.tar.gz`
+
 ## Building from Source
 
 ### Prerequisites
