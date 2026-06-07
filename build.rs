@@ -9,7 +9,8 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=kernel32");
     }
     
-    // Enable AES-NI if available
+    // Enable AES-NI if available (only on x86/x86_64)
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     if is_x86_feature_detected!("aes") {
         println!("cargo:rustc-cfg=feature=\"aes-ni\"");
     }
