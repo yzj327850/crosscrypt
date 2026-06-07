@@ -4,6 +4,7 @@ use tracing::{info, error};
 mod core;
 mod fs;
 mod platform;
+mod gui;
 
 use core::{CrossCryptVolume, EncryptionConfig, VolumeStatus};
 
@@ -13,7 +14,11 @@ use core::{CrossCryptVolume, EncryptionConfig, VolumeStatus};
 #[command(version = "0.1.0")]
 struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    command: Option<Commands>,
+    
+    /// Force CLI mode even if GUI is available
+    #[arg(long, global = true)]
+    cli: bool,
 }
 
 #[derive(Subcommand)]
@@ -89,32 +94,50 @@ async fn main() -> anyhow::Result<()> {
     
     let cli = Cli::parse();
     
+    // If no command provided and not forced CLI, launch GUI
+    if cli.command.is_none() && !cli.cli {
+        #[cfg(feature = "gui")]
+        {
+            gui::run_gui();
+            return Ok(());
+        }
+        #[cfg(not(feature = "gui"))]
+        {
+            println!("GUI not available. Use --help for CLI usage.");
+            return Ok(());
+        }
+    }
+    
     match cli.command {
-        Commands::Create { device, label, quick, force } => {
+        Some(Commands::Create { device, label, quick, force }) => {
             info!("Creating encrypted volume on {}", device);
             create_volume(device, label, quick, force).await?;
         }
-        Commands::Mount { device, mountpoint } => {
+        Some(Commands::Mount { device, mountpoint }) => {
             info!("Mounting {}", device);
             mount_volume(device, mountpoint).await?;
         }
-        Commands::Unmount { target, force } => {
+        Some(Commands::Unmount { target, force }) => {
             info!("Unmounting {}", target);
             unmount_volume(target, force).await?;
         }
-        Commands::Lock { target } => {
+        Some(Commands::Lock { target }) => {
             info!("Locking {}", target);
             lock_volume(target).await?;
         }
-        Commands::Status { device } => {
+        Some(Commands::Status { device }) => {
             check_status(device).await?;
         }
-        Commands::Resume { device } => {
+        Some(Commands::Resume { device }) => {
             info!("Resuming encryption on {}", device);
             resume_encryption(device).await?;
         }
-        Commands::Benchmark => {
+        Some(Commands::Benchmark) => {
             run_benchmark().await?;
+        }
+        None => {
+            // This should not happen due to the check above, but handle it anyway
+            println!("Use --help for usage information, or run without arguments for GUI.");
         }
     }
     

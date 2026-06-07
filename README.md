@@ -11,14 +11,29 @@ Cross-platform portable disk encryption solution.
 - 📁 **In-place encryption** - Encrypt existing data without formatting
 - ⚡ **High performance** - Hardware-accelerated AES-NI, multi-threaded
 - 🖥️ **Native integration** - Works with system file manager
+- 🎨 **GUI available** - Easy-to-use graphical interface
 
 ## Quick Start
 
-### Installation
+### GUI Mode (Windows)
 
-Download the latest release for your platform and extract to your USB drive.
+Double-click to launch the GUI:
+- **`crosscrypt-gui.bat`** - Command-line menu (no dependencies)
+- **`crosscrypt-gui.ps1`** - PowerShell GUI (better interface)
 
-### Encrypt a New Drive
+Or run `crosscrypt.exe` without arguments to launch the default GUI.
+
+### CLI Mode
+
+```bash
+# Windows
+crosscrypt.exe --help
+
+# macOS/Linux
+./crosscrypt --help
+```
+
+### Create Encrypted Volume
 
 ```bash
 # Windows
@@ -28,22 +43,22 @@ crosscrypt.exe create -d E: -l "My Secure Drive"
 ./crosscrypt create -d /dev/sdb -l "My Secure Drive"
 ```
 
-### Mount an Encrypted Drive
+### Mount Encrypted Volume
 
 ```bash
-crosscrypt mount -d E:
+crosscrypt.exe mount -d E:
 ```
 
 ### Unmount
 
 ```bash
-crosscrypt unmount -d E:
+crosscrypt.exe unmount -d E:
 ```
 
 ### Emergency Lock
 
 ```bash
-crosscrypt lock -d E:
+crosscrypt.exe lock -d E:
 ```
 
 ## Building from Source
@@ -59,17 +74,24 @@ crosscrypt lock -d E:
 ### Build
 
 ```bash
+# Default build (with GUI)
 cargo build --release
+
+# CLI only (no GUI)
+cargo build --release --no-default-features
+
+# Cross-compile for Windows from Linux/macOS
+cargo build --target x86_64-pc-windows-gnu --release
 ```
 
-### Cross-compile
+### Running
 
 ```bash
-# Windows from Linux/macOS
-cargo build --target x86_64-pc-windows-gnu --release
+# GUI mode (default)
+./crosscrypt
 
-# macOS from Linux
-cargo build --target x86_64-apple-darwin --release
+# CLI mode
+./crosscrypt --cli
 ```
 
 ## Security

@@ -15,6 +15,10 @@ path = "src/lib.rs"
 name = "crosscrypt"
 path = "src/main.rs"
 
+[features]
+default = ["gui"]
+gui = ["dialoguer"]
+
 [dependencies]
 # Core crypto
 aes = "0.8"
@@ -46,6 +50,9 @@ tracing-subscriber = "0.3"
 clap = { version = "4.4", features = ["derive"] }
 rpassword = "7.3"
 
+# GUI - 交互式命令行界面
+dialoguer = { version = "0.11", optional = true, features = ["fuzzy-select"] }
+
 # Parallel processing
 rayon = "1.8"
 
@@ -62,11 +69,9 @@ windows-sys = { version = "0.52", features = ["Win32_Foundation", "Win32_Storage
 
 [target.'cfg(target_os = "macos")'.dependencies]
 libc = "0.2"
-# fuser = "0.14"  # Requires macFUSE installation
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = "0.2"
-# fuser = "0.14"  # Requires libfuse3-dev
 
 [dev-dependencies]
 tempfile = "3.8"
